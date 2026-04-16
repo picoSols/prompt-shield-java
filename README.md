@@ -8,7 +8,7 @@ You send it user input before the input reaches your LLM. It returns a risk scor
 
 ## Live demo
 
-`https://prompt-shield.picosols.net` *(replace with real URL after Coolify deploy)*
+`https://prompt-shield.omayoglu.com` *(goes live once the Cloudflare Tunnel is wired up on the Mac mini)*
 
 Type anything, click Scan. The response + reasons + audit row are all visible in real time.
 
