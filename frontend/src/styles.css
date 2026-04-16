@@ -1,0 +1,22 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html, body { height: 100%; }
+
+/* Subtle scrollbar, dark */
+::-webkit-scrollbar        { width: 10px; height: 10px; }
+::-webkit-scrollbar-track  { background: #0b0d12; }
+::-webkit-scrollbar-thumb  { background: #2a2f3c; border-radius: 6px; }
+::-webkit-scrollbar-thumb:hover { background: #3a4152; }
+
+/* Motion-safe pulse used by the scan button while waiting */
+@keyframes pulse-border {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(242, 152, 72, 0.4); }
+  50%      { box-shadow: 0 0 0 10px rgba(242, 152, 72, 0); }
+}
+.scan-pending { animation: pulse-border 1.4s ease-in-out infinite; }

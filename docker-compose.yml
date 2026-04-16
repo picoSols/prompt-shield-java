@@ -1,0 +1,54 @@
+services:
+  mysql:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    # Bind to loopback only: backend reaches MySQL over the compose network,
+    # and we don't want the DB publicly reachable on a VPS. Comment out
+    # entirely in production if you never need a local client.
+    ports:
+      - "127.0.0.1:3306:3306"
+
+  backend:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    environment:
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      SHIELD_AUDIT_STORE_RAW: ${SHIELD_AUDIT_STORE_RAW:-false}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-3-5-sonnet-latest}
+      BACKEND_PORT: 8080
+    depends_on:
+      mysql:
+        condition: service_healthy
+    ports:
+      - "${BACKEND_PORT:-8080}:8080"
+
+  frontend:
+    build:
+      context: ./frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "${FRONTEND_PORT:-4200}:80"
+
+volumes:
+  mysql_data:

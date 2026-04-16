@@ -1,0 +1,59 @@
+spring:
+  application:
+    name: prompt-shield
+
+  datasource:
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/${MYSQL_DATABASE:prompt_shield}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+    username: ${MYSQL_USER:shield}
+    password: ${MYSQL_PASSWORD:shield}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        jdbc:
+          time_zone: UTC
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+
+server:
+  port: ${BACKEND_PORT:8080}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+
+shield:
+  audit:
+    store-raw: ${SHIELD_AUDIT_STORE_RAW:false}
+  anthropic:
+    api-key: ${ANTHROPIC_API_KEY:}
+    model: ${ANTHROPIC_MODEL:claude-3-5-sonnet-latest}
+    base-url: https://api.anthropic.com
+
+---
+spring:
+  config:
+    activate:
+      on-profile: test
+  datasource:
+    url: jdbc:h2:mem:test;MODE=MySQL;DB_CLOSE_DELAY=-1
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+  flyway:
+    enabled: false

@@ -1,0 +1,12 @@
+{
+  "/scan": {
+    "target": "http://localhost:8080",
+    "secure": false,
+    "changeOrigin": true
+  },
+  "/audit": {
+    "target": "http://localhost:8080",
+    "secure": false,
+    "changeOrigin": true
+  }
+}

@@ -1,0 +1,112 @@
+<section class="max-w-5xl mx-auto px-6 py-10">
+  <header class="mb-10">
+    <div class="flex items-baseline gap-3">
+      <h1 class="text-3xl font-semibold tracking-tight">prompt-shield</h1>
+      <span class="text-xs uppercase tracking-widest text-brand-accent font-mono">live demo</span>
+    </div>
+    <p class="mt-3 text-brand-muted max-w-2xl">
+      A Spring Boot microservice that scans text for prompt-injection risk before it reaches your LLM.
+      Paste anything, click <span class="text-brand-text">Scan</span>, watch the verdict land.
+      <a class="text-brand-accent hover:underline ml-1"
+         href="https://github.com/picoSols/prompt-shield-java" target="_blank" rel="noopener">source on GitHub &rarr;</a>
+    </p>
+  </header>
+
+  <!-- Who is this for -->
+  <div class="grid md:grid-cols-3 gap-4 mb-10 text-sm">
+    <div class="rounded-xl border border-brand-line bg-brand-surface p-4">
+      <div class="text-brand-accent font-medium mb-1">Developers shipping LLM features</div>
+      <p class="text-brand-muted">One HTTP call in front of your Claude/GPT call. No framework adoption.</p>
+    </div>
+    <div class="rounded-xl border border-brand-line bg-brand-surface p-4">
+      <div class="text-brand-accent font-medium mb-1">Compliance &amp; risk teams</div>
+      <p class="text-brand-muted">MySQL audit log of every scan — evidence a control instead of claiming one.</p>
+    </div>
+    <div class="rounded-xl border border-brand-line bg-brand-surface p-4">
+      <div class="text-brand-accent font-medium mb-1">Self-hosted only</div>
+      <p class="text-brand-muted">Nothing leaves your box. Run it next to your app. Drop-in Docker.</p>
+    </div>
+  </div>
+
+  <!-- Scan form -->
+  <div class="rounded-2xl border border-brand-line bg-brand-surface p-6">
+    <label for="input" class="block text-sm text-brand-muted mb-2">Text to scan</label>
+    <textarea
+      id="input"
+      [value]="input()"
+      (input)="input.set($any($event.target).value)"
+      rows="6"
+      placeholder="Paste a user prompt, a resume excerpt, or an adversarial input…"
+      class="w-full rounded-lg bg-brand-bg border border-brand-line p-3 font-mono text-sm
+             focus:outline-none focus:ring-2 focus:ring-brand-accent/60 resize-vertical">
+    </textarea>
+
+    <div class="mt-4 flex items-center gap-3">
+      <button
+        (click)="scan()"
+        [disabled]="scanning()"
+        [class.scan-pending]="scanning()"
+        class="inline-flex items-center gap-2 rounded-lg bg-brand-accent text-brand-bg font-semibold
+               px-5 py-2.5 hover:brightness-110 transition-all disabled:opacity-60 disabled:cursor-not-allowed">
+        <span *ngIf="!scanning()">Scan</span>
+        <span *ngIf="scanning()">Scanning…</span>
+      </button>
+      <span *ngIf="error()" class="text-brand-high text-sm">{{ error() }}</span>
+    </div>
+
+    <!-- Fixtures -->
+    <div class="mt-6">
+      <div class="text-xs uppercase tracking-widest text-brand-muted mb-2">Try a fixture</div>
+      <div class="flex flex-wrap gap-2">
+        <button *ngFor="let f of fixtures"
+                (click)="loadFixture(f)"
+                class="text-xs px-3 py-1.5 rounded-full border border-brand-line
+                       hover:border-brand-accent hover:text-brand-accent transition"
+                [class.border-brand-high]="f.kind === 'injection'"
+                [class.text-brand-high]="f.kind === 'injection'">
+          {{ f.label }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Result -->
+  <div id="result-panel" *ngIf="result() as r"
+       class="mt-6 rounded-2xl border border-brand-line bg-brand-surface p-6">
+    <div class="flex items-center justify-between flex-wrap gap-4">
+      <div>
+        <div class="text-xs uppercase tracking-widest text-brand-muted">Verdict</div>
+        <div class="text-3xl font-semibold mt-1" [ngClass]="riskColor()">{{ r.risk }}</div>
+      </div>
+      <div class="text-right text-xs text-brand-muted font-mono">
+        <div>scan {{ r.scanId.slice(0, 8) }}…</div>
+        <div>ruleset v{{ r.rulesetVersion }}</div>
+        <div>{{ r.latencyMs }}ms · scanner: {{ r.scanner }}</div>
+      </div>
+    </div>
+
+    <div class="mt-5">
+      <div class="text-xs uppercase tracking-widest text-brand-muted mb-2">Reasons</div>
+      <ul class="space-y-2">
+        <li *ngFor="let reason of r.reasons"
+            class="flex items-start gap-3 text-sm">
+          <span class="font-mono text-xs text-brand-accent whitespace-nowrap">{{ reason.code }}</span>
+          <span class="text-brand-text">{{ reason.detail }}</span>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- History -->
+  <div *ngIf="history().length > 1" class="mt-8">
+    <div class="text-xs uppercase tracking-widest text-brand-muted mb-3">Recent scans in this session</div>
+    <ul class="space-y-1 text-xs font-mono">
+      <li *ngFor="let h of history(); let i = index"
+          class="flex items-center gap-4 text-brand-muted">
+        <span [ngClass]="colorFor(h.risk)" class="font-semibold w-16">{{ h.risk }}</span>
+        <span>{{ h.latencyMs }}ms</span>
+        <span>{{ h.scanId.slice(0, 8) }}</span>
+      </li>
+    </ul>
+  </div>
+</section>

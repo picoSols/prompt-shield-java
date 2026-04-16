@@ -1,0 +1,35 @@
+# Env / secrets
+.env
+.env.local
+*.local
+
+# Backend (Maven + JetBrains)
+backend/target/
+backend/.mvn/wrapper/maven-wrapper.jar
+backend/.idea/
+backend/*.iml
+backend/.settings/
+backend/.project
+backend/.classpath
+backend/.vscode/
+backend/HELP.md
+backend/logs/
+backend/*.log
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/
+frontend/coverage/
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/.env
+frontend/.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+*.pid
