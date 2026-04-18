@@ -38,8 +38,12 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
+    # Bind to loopback only. The frontend container reaches the backend over
+    # the compose network (backend:8080), so the host-port binding is for
+    # local debugging / direct-curl only. Without this prefix, a host with a
+    # public or LAN interface exposes /audit and /actuator unauthenticated.
     ports:
-      - "${BACKEND_PORT:-8080}:8080"
+      - "127.0.0.1:${BACKEND_PORT:-8080}:8080"
 
   frontend:
     build:

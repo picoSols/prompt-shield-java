@@ -59,6 +59,20 @@
             <scope>runtime</scope>
         </dependency>
 
+        <!--
+          ICU4J is used by InputNormalizer for NFKC case-folding and the
+          Unicode-confusable `SpoofChecker` skeleton. That skeleton is what
+          collapses Cyrillic/Greek/fullwidth homoglyphs onto their Latin
+          equivalents before the rule regexes run, so e.g. `Ignоre` (with
+          U+043E) gets matched by the INSTRUCTION_OVERRIDE rule the same
+          way the ASCII spelling does.
+        -->
+        <dependency>
+            <groupId>com.ibm.icu</groupId>
+            <artifactId>icu4j</artifactId>
+            <version>75.1</version>
+        </dependency>
+
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>

@@ -26,7 +26,7 @@ This repo is Docker-Compose-first. Coolify can consume `docker-compose.yml` dire
 
 4. Under **Domains**, bind `prompt-shield.yourdomain.com` to the `frontend` service on port 80 only. The frontend nginx proxies `/scan` and `/audit` to the backend over the internal compose network, so a single domain is enough. Coolify will provision Let's Encrypt automatically.
 
-   (If you'd rather expose `/actuator/**` or split the backend onto its own subdomain, you can point Coolify directly at the `backend` service on 8080. The SPA also honours `window.__API_BASE__` at runtime if you want to point it somewhere else.)
+   (The SPA honours `window.__API_BASE__` at runtime if you ever want to point it somewhere else. **Do not** expose the `backend` service on 8080 publicly as-is — it serves `/audit` and the full Spring Boot Actuator surface without authentication. If you need either publicly, add header-auth to `ScanController#recent` and trim `management.endpoints.web.exposure.include` in `application.yml` first.)
 
 5. Click **Deploy**.
 
