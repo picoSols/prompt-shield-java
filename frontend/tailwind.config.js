@@ -1,19 +1,25 @@
 /** @type {import('tailwindcss').Config} */
+// Brand palette resolves through CSS custom properties defined in styles.css,
+// so the whole UI flips with prefers-color-scheme without class soup. The
+// `<alpha-value>` placeholder is what lets utilities like `ring-brand-accent/60`
+// keep expanding to an rgb(... / 0.6) value.
+const rgbVar = (name) => `rgb(var(--brand-${name}) / <alpha-value>)`;
+
 module.exports = {
   content: ['./src/**/*.{html,ts}'],
   theme: {
     extend: {
       colors: {
         brand: {
-          bg: '#0b0d12',
-          surface: '#14171f',
-          line: '#1f2430',
-          text: '#e6e8ef',
-          muted: '#8b92a3',
-          accent: '#f29848', // echoes the CV accent
-          low: '#55c28a',
-          medium: '#e8b84e',
-          high: '#e8615a'
+          bg: rgbVar('bg'),
+          surface: rgbVar('surface'),
+          line: rgbVar('line'),
+          text: rgbVar('text'),
+          muted: rgbVar('muted'),
+          accent: rgbVar('accent'),
+          low: rgbVar('low'),
+          medium: rgbVar('medium'),
+          high: rgbVar('high')
         }
       },
       fontFamily: {

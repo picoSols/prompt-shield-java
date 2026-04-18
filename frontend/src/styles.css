@@ -2,21 +2,50 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Theme palette lives in CSS custom properties so Tailwind utilities like
+ * `bg-brand-bg` resolve to light or dark values automatically via
+ * prefers-color-scheme. Values are RGB triplets (no commas, no rgb())
+ * so Tailwind's alpha helpers keep working — e.g. `ring-brand-accent/60`
+ * expands to `rgb(var(--brand-accent) / 0.6)`.
+ */
 :root {
-  color-scheme: dark;
+  --brand-bg: 248 250 252;
+  --brand-surface: 255 255 255;
+  --brand-line: 226 232 240;
+  --brand-text: 15 23 42;
+  --brand-muted: 100 116 139;
+  --brand-accent: 234 88 12;
+  --brand-low: 22 163 74;
+  --brand-medium: 217 119 6;
+  --brand-high: 220 38 38;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --brand-bg: 11 13 18;
+    --brand-surface: 20 23 31;
+    --brand-line: 31 36 48;
+    --brand-text: 230 232 239;
+    --brand-muted: 139 146 163;
+    --brand-accent: 242 152 72;
+    --brand-low: 85 194 138;
+    --brand-medium: 232 184 78;
+    --brand-high: 232 97 90;
+    color-scheme: dark;
+  }
 }
 
 html, body { height: 100%; }
 
-/* Subtle scrollbar, dark */
 ::-webkit-scrollbar        { width: 10px; height: 10px; }
-::-webkit-scrollbar-track  { background: #0b0d12; }
-::-webkit-scrollbar-thumb  { background: #2a2f3c; border-radius: 6px; }
-::-webkit-scrollbar-thumb:hover { background: #3a4152; }
+::-webkit-scrollbar-track  { background: rgb(var(--brand-bg)); }
+::-webkit-scrollbar-thumb  { background: rgb(var(--brand-line)); border-radius: 6px; }
+::-webkit-scrollbar-thumb:hover { background: rgb(var(--brand-muted)); }
 
-/* Motion-safe pulse used by the scan button while waiting */
 @keyframes pulse-border {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(242, 152, 72, 0.4); }
-  50%      { box-shadow: 0 0 0 10px rgba(242, 152, 72, 0); }
+  0%, 100% { box-shadow: 0 0 0 0 rgb(var(--brand-accent) / 0.4); }
+  50%      { box-shadow: 0 0 0 10px rgb(var(--brand-accent) / 0); }
 }
 .scan-pending { animation: pulse-border 1.4s ease-in-out infinite; }
