@@ -24,9 +24,22 @@ export class ScanComponent {
   readonly history = signal<ScanResponse[]>([]);
   readonly fixtures = FIXTURES;
 
-  readonly riskColor = computed(() => {
-    const r = this.result()?.risk;
-    return this.colorFor(r);
+  readonly riskColor = computed(() => this.colorFor(this.result()?.risk));
+  readonly verdictBorderClass = computed(() => {
+    switch (this.result()?.risk) {
+      case 'HIGH':   return 'border-brand-high/60';
+      case 'MEDIUM': return 'border-brand-medium/60';
+      case 'LOW':    return 'border-brand-low/60';
+      default:       return 'border-brand-line';
+    }
+  });
+  readonly riskDotBg = computed(() => {
+    switch (this.result()?.risk) {
+      case 'HIGH':   return 'bg-brand-high';
+      case 'MEDIUM': return 'bg-brand-medium';
+      case 'LOW':    return 'bg-brand-low';
+      default:       return 'bg-brand-muted';
+    }
   });
 
   colorFor(risk: RiskLevel | undefined): string {

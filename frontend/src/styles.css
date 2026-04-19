@@ -49,3 +49,43 @@ html, body { height: 100%; }
   50%      { box-shadow: 0 0 0 10px rgb(var(--brand-accent) / 0); }
 }
 .scan-pending { animation: pulse-border 1.4s ease-in-out infinite; }
+
+/*
+ * Subtle grid background — adds depth without noise. The grid lines are
+ * the brand-line color at low opacity so it reads on both light and dark.
+ */
+.grid-bg {
+  background-image:
+    linear-gradient(to right, rgb(var(--brand-line) / 0.35) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(var(--brand-line) / 0.35) 1px, transparent 1px);
+  background-size: 48px 48px;
+  background-position: -1px -1px;
+}
+
+/*
+ * Pulse dot — the green "live" indicator in the meta strip. A slow, even
+ * rhythm; loud enough to register, quiet enough not to annoy.
+ */
+@keyframes pulse-dot {
+  0%, 100% { box-shadow: 0 0 0 0 rgb(var(--brand-low) / 0.55); }
+  50%      { box-shadow: 0 0 0 6px rgb(var(--brand-low) / 0); }
+}
+.pulse-dot { animation: pulse-dot 2s ease-in-out infinite; }
+
+/*
+ * Verdict glow — soft halo behind the result card on reveal, colored by
+ * the risk tier via the border class the component already applies.
+ */
+.verdict-glow {
+  position: relative;
+  box-shadow:
+    0 1px 0 0 rgb(var(--brand-line) / 0.4),
+    0 20px 40px -20px rgb(0 0 0 / 0.25);
+}
+
+/*
+ * Reset margin on <pre> inside code panels so Tailwind's overflow/padding
+ * utilities drive the layout without fighting user-agent defaults.
+ */
+pre { margin: 0; }
+

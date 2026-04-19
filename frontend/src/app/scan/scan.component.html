@@ -1,130 +1,247 @@
-<section class="max-w-5xl mx-auto px-6 py-10">
-  <header class="mb-10">
-    <div class="flex items-baseline gap-3">
-      <h1 class="text-3xl font-semibold tracking-tight">prompt-shield</h1>
-      <span class="text-xs uppercase tracking-widest text-brand-accent font-mono">live demo</span>
-    </div>
-    <p class="mt-3 text-brand-muted max-w-2xl">
-      A Spring Boot microservice that scans text for prompt-injection risk before it reaches your LLM.
-      Paste anything, click <span class="text-brand-text">Scan</span>, watch the verdict land.
-      <a class="text-brand-accent hover:underline ml-1"
-         href="https://github.com/picoSols/prompt-shield-java" target="_blank" rel="noopener">source on GitHub &rarr;</a>
-    </p>
-  </header>
+<div class="grid-bg min-h-full">
+  <section class="max-w-5xl mx-auto px-6 py-14 md:py-20">
 
-  <!-- Who is this for -->
-  <div class="grid md:grid-cols-3 gap-4 mb-10 text-sm">
-    <div class="rounded-xl border border-brand-line bg-brand-surface p-4">
-      <div class="text-brand-accent font-medium mb-1">Developers shipping LLM features</div>
-      <p class="text-brand-muted">One HTTP call in front of your Claude/GPT call. No framework adoption.</p>
-    </div>
-    <div class="rounded-xl border border-brand-line bg-brand-surface p-4">
-      <div class="text-brand-accent font-medium mb-1">Compliance &amp; risk teams</div>
-      <p class="text-brand-muted">MySQL audit log of every scan — evidence a control instead of claiming one.</p>
-    </div>
-    <div class="rounded-xl border border-brand-line bg-brand-surface p-4">
-      <div class="text-brand-accent font-medium mb-1">Self-hosted only</div>
-      <p class="text-brand-muted">Nothing leaves your box. Run it next to your app. Drop-in Docker.</p>
-    </div>
-  </div>
-
-  <!-- Scan form -->
-  <div class="rounded-2xl border border-brand-line bg-brand-surface p-6">
-    <label for="input" class="block text-sm text-brand-muted mb-2">Text to scan</label>
-    <textarea
-      id="input"
-      [value]="input()"
-      (input)="input.set($any($event.target).value)"
-      rows="6"
-      placeholder="Paste a user prompt, a resume excerpt, or an adversarial input…"
-      class="w-full rounded-lg bg-brand-bg border border-brand-line p-3 font-mono text-sm
-             focus:outline-none focus:ring-2 focus:ring-brand-accent/60 resize-vertical">
-    </textarea>
-
-    <div class="mt-4 flex items-center gap-3">
-      <button
-        (click)="scan()"
-        [disabled]="scanning()"
-        [class.scan-pending]="scanning()"
-        class="inline-flex items-center gap-2 rounded-lg bg-brand-accent text-brand-bg font-semibold
-               px-5 py-2.5 hover:brightness-110 transition-all disabled:opacity-60 disabled:cursor-not-allowed">
-        <span *ngIf="!scanning()">Scan</span>
-        <span *ngIf="scanning()">Scanning…</span>
-      </button>
-      <span *ngIf="error()" class="text-brand-high text-sm">{{ error() }}</span>
+    <!-- Meta strip -->
+    <div class="flex items-center gap-3 mb-7 text-xs font-mono text-brand-muted flex-wrap">
+      <span class="inline-flex items-center gap-2">
+        <span class="h-1.5 w-1.5 rounded-full bg-brand-low pulse-dot"></span>
+        <span>prompt-shield.omayoglu.com</span>
+      </span>
+      <span class="text-brand-line">·</span>
+      <span>ruleset v1.1.0</span>
+      <span class="text-brand-line">·</span>
+      <a href="https://github.com/picoSols/prompt-shield-java" target="_blank" rel="noopener"
+         class="hover:text-brand-accent transition">MIT · open source</a>
     </div>
 
-    <!-- Fixtures -->
-    <div class="mt-6">
-      <div class="text-xs uppercase tracking-widest text-brand-muted mb-2">Try a fixture</div>
-      <div class="flex flex-wrap gap-2">
-        <button *ngFor="let f of fixtures"
-                (click)="loadFixture(f)"
-                class="text-xs px-3 py-1.5 rounded-full border border-brand-line
-                       hover:border-brand-accent hover:text-brand-accent transition"
-                [class.border-brand-high]="f.kind === 'injection'"
-                [class.text-brand-high]="f.kind === 'injection'">
-          {{ f.label }}
-        </button>
+    <!-- Hero -->
+    <header class="mb-14 max-w-3xl">
+      <h1 class="text-[2.5rem] md:text-[3.5rem] font-semibold tracking-tight leading-[1.02]">
+        Prompt-injection defence,
+        <span class="block text-brand-muted">shipped as a microservice.</span>
+      </h1>
+      <p class="mt-6 text-brand-muted text-lg leading-relaxed max-w-2xl">
+        A Spring Boot + MySQL service that scans text for prompt-injection risk before it
+        reaches your LLM. Deterministic rules first, optional Claude judge, hashed audit
+        log — every scan reconstructable after the fact.
+      </p>
+
+      <div class="mt-8 flex flex-wrap items-center gap-3">
+        <a href="https://github.com/picoSols/prompt-shield-java" target="_blank" rel="noopener"
+           class="inline-flex items-center gap-2 text-sm font-medium px-4 py-2.5 rounded-lg
+                  border border-brand-line bg-brand-surface
+                  hover:border-brand-accent hover:text-brand-accent transition">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2.1c-3.3.7-4-1.6-4-1.6-.6-1.4-1.3-1.8-1.3-1.8-1.1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1.1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.8-1.6-2.7-.3-5.5-1.3-5.5-5.9 0-1.3.5-2.4 1.2-3.2-.1-.3-.5-1.5.1-3.2 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0c2.3-1.5 3.3-1.2 3.3-1.2.7 1.7.3 2.9.1 3.2.8.8 1.2 1.9 1.2 3.2 0 4.6-2.8 5.6-5.5 5.9.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A12 12 0 0 0 12 .3"/>
+          </svg>
+          View source
+        </a>
+        <div class="text-xs font-mono text-brand-muted flex items-center gap-1.5">
+          <span class="px-2 py-1 rounded bg-brand-surface border border-brand-line text-brand-accent">POST</span>
+          <span>/scan</span>
+          <span class="hidden sm:inline text-brand-line">·</span>
+          <span class="hidden sm:inline">~1ms deterministic path</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Scan interface -->
+    <div class="rounded-2xl border border-brand-line bg-brand-surface overflow-hidden
+                shadow-xl shadow-black/5">
+      <!-- Endpoint bar -->
+      <div class="px-5 py-3 border-b border-brand-line flex items-center justify-between bg-brand-bg/40">
+        <div class="flex items-center gap-2 text-xs font-mono">
+          <span class="h-2 w-2 rounded-full bg-brand-high/70"></span>
+          <span class="h-2 w-2 rounded-full bg-brand-medium/70"></span>
+          <span class="h-2 w-2 rounded-full bg-brand-low/70"></span>
+          <span class="ml-3 text-brand-muted">prompt-shield</span>
+          <span class="text-brand-line">›</span>
+          <span class="text-brand-text">scan</span>
+        </div>
+        <div class="text-xs font-mono text-brand-muted">
+          ScanRequest &rarr; ScanResponse
+        </div>
+      </div>
+
+      <div class="p-6">
+        <label for="input" class="flex items-baseline justify-between mb-2">
+          <span class="text-xs font-mono text-brand-muted">
+            input: <span class="text-brand-text">string</span>
+          </span>
+          <span class="text-xs font-mono text-brand-muted/60">{{ input().length }} chars</span>
+        </label>
+        <textarea
+          id="input"
+          [value]="input()"
+          (input)="input.set($any($event.target).value)"
+          rows="6"
+          placeholder="Paste a user prompt, a resume excerpt, or an adversarial input…"
+          class="w-full rounded-lg bg-brand-bg border border-brand-line p-4 font-mono text-sm
+                 leading-relaxed text-brand-text
+                 focus:outline-none focus:ring-2 focus:ring-brand-accent/40
+                 focus:border-brand-accent/60 resize-vertical transition">
+        </textarea>
+
+        <div class="mt-5 flex items-center gap-4 flex-wrap">
+          <button
+            (click)="scan()"
+            [disabled]="scanning()"
+            [class.scan-pending]="scanning()"
+            class="relative inline-flex items-center gap-2 rounded-lg bg-brand-accent
+                   text-brand-bg font-semibold px-6 py-3
+                   hover:brightness-110 active:brightness-95 transition-all
+                   disabled:opacity-60 disabled:cursor-not-allowed
+                   shadow-lg shadow-brand-accent/20 focus:outline-none focus:ring-2
+                   focus:ring-brand-accent/60 focus:ring-offset-2 focus:ring-offset-brand-surface">
+            <ng-container *ngIf="!scanning()">
+              <span>Scan</span>
+              <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path fill-rule="evenodd" d="M3 10a.75.75 0 0 1 .75-.75h10.69l-3.22-3.22a.75.75 0 0 1 1.06-1.06l4.5 4.5a.75.75 0 0 1 0 1.06l-4.5 4.5a.75.75 0 0 1-1.06-1.06l3.22-3.22H3.75A.75.75 0 0 1 3 10Z" clip-rule="evenodd"/>
+              </svg>
+            </ng-container>
+            <ng-container *ngIf="scanning()">
+              <span class="h-4 w-4 rounded-full border-2 border-brand-bg border-t-transparent animate-spin"></span>
+              <span>Scanning…</span>
+            </ng-container>
+          </button>
+          <span *ngIf="error()" class="text-brand-high text-sm font-mono">{{ error() }}</span>
+        </div>
+      </div>
+
+      <!-- Fixtures -->
+      <div class="px-6 pb-6">
+        <div class="text-[10px] font-mono uppercase tracking-[0.2em] text-brand-muted mb-3">
+          Preloaded fixtures
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <button *ngFor="let f of fixtures"
+                  (click)="loadFixture(f)"
+                  class="group text-left px-3.5 py-2.5 rounded-lg border bg-brand-bg/60
+                         hover:bg-brand-bg transition-all flex items-center gap-3"
+                  [ngClass]="f.kind === 'safe' ? 'border-brand-low/40 hover:border-brand-low' : 'border-brand-high/40 hover:border-brand-high'">
+            <span class="font-mono text-sm flex-shrink-0 w-5 text-center"
+                  [ngClass]="f.kind === 'safe' ? 'text-brand-low' : 'text-brand-high'">
+              {{ f.kind === 'safe' ? '✓' : '×' }}
+            </span>
+            <span class="text-sm font-medium flex-1">{{ f.label }}</span>
+            <span class="text-xs font-mono opacity-0 group-hover:opacity-60 transition text-brand-muted">→</span>
+          </button>
+        </div>
       </div>
     </div>
-  </div>
 
-  <!-- Result -->
-  <div id="result-panel" *ngIf="result() as r"
-       class="mt-6 rounded-2xl border border-brand-line bg-brand-surface p-6">
-    <div class="flex items-center justify-between flex-wrap gap-4">
-      <div>
-        <div class="text-xs uppercase tracking-widest text-brand-muted">Verdict</div>
-        <div class="text-3xl font-semibold mt-1" [ngClass]="riskColor()">{{ r.risk }}</div>
+    <!-- Verdict -->
+    <div id="result-panel" *ngIf="result() as r"
+         class="mt-6 rounded-2xl border overflow-hidden bg-brand-surface verdict-glow"
+         [ngClass]="verdictBorderClass()">
+      <div class="px-6 py-5 border-b border-brand-line flex items-start justify-between flex-wrap gap-4">
+        <div class="flex items-center gap-5">
+          <div>
+            <div class="text-[10px] font-mono uppercase tracking-[0.2em] text-brand-muted mb-1">verdict</div>
+            <div class="text-5xl font-bold tracking-tight leading-none" [ngClass]="riskColor()">
+              {{ r.risk }}
+            </div>
+          </div>
+          <div class="h-12 w-px bg-brand-line hidden sm:block"></div>
+          <div class="text-xs font-mono text-brand-muted space-y-1">
+            <div class="flex items-center gap-1.5">
+              <span class="h-1.5 w-1.5 rounded-full" [ngClass]="riskDotBg()"></span>
+              <span>{{ r.scanner }} · v{{ r.rulesetVersion }}</span>
+            </div>
+            <div>
+              <span class="text-brand-text">{{ r.latencyMs }}</span>ms total
+            </div>
+          </div>
+        </div>
+        <div class="text-right text-xs font-mono text-brand-muted/70">
+          <div class="uppercase tracking-[0.2em] text-[10px] mb-1">scan id</div>
+          <div>{{ r.scanId.slice(0, 8) }}…{{ r.scanId.slice(-4) }}</div>
+        </div>
       </div>
-      <div class="text-right text-xs text-brand-muted font-mono">
-        <div>scan {{ r.scanId.slice(0, 8) }}…</div>
-        <div>ruleset v{{ r.rulesetVersion }}</div>
-        <div>{{ r.latencyMs }}ms · scanner: {{ r.scanner }}</div>
+
+      <div class="p-6" *ngIf="r.reasons.length">
+        <div class="text-[10px] font-mono uppercase tracking-[0.2em] text-brand-muted mb-4">
+          {{ r.reasons.length }} {{ r.reasons.length === 1 ? 'rule matched' : 'rules matched' }}
+        </div>
+        <ul class="divide-y divide-brand-line/50">
+          <li *ngFor="let reason of r.reasons; let i = index"
+              class="py-3 first:pt-0 last:pb-0 grid grid-cols-[1.5rem_auto_1fr] items-start gap-x-4">
+            <span class="text-xs font-mono text-brand-muted/60 pt-0.5">{{ i + 1 }}</span>
+            <span class="font-mono text-xs text-brand-accent whitespace-nowrap pt-0.5">{{ reason.code }}</span>
+            <span class="text-sm text-brand-text break-words">{{ reason.detail }}</span>
+          </li>
+        </ul>
+      </div>
+
+      <div class="p-6 text-sm text-brand-muted" *ngIf="!r.reasons.length">
+        No rules matched. Input is clean by the current ruleset.
       </div>
     </div>
 
-    <div class="mt-5">
-      <div class="text-xs uppercase tracking-widest text-brand-muted mb-2">Reasons</div>
-      <ul class="space-y-2">
-        <li *ngFor="let reason of r.reasons"
-            class="flex items-start gap-3 text-sm">
-          <span class="font-mono text-xs text-brand-accent whitespace-nowrap">{{ reason.code }}</span>
-          <span class="text-brand-text">{{ reason.detail }}</span>
-        </li>
-      </ul>
-    </div>
-  </div>
+    <!-- HTTP contract -->
+    <section class="mt-16">
+      <div class="text-[10px] font-mono uppercase tracking-[0.2em] text-brand-muted mb-4">HTTP contract</div>
+      <div class="grid md:grid-cols-2 gap-3">
+        <div class="rounded-xl border border-brand-line bg-brand-surface overflow-hidden">
+          <div class="px-4 py-2.5 border-b border-brand-line text-xs font-mono text-brand-muted flex items-center gap-2">
+            <span class="text-brand-accent">POST</span> /scan
+          </div>
+          <pre class="p-4 font-mono text-xs leading-relaxed text-brand-text overflow-x-auto m-0"><span class="text-brand-muted">Content-Type:</span> application/json
 
-  <!-- History -->
-  <div *ngIf="history().length > 1" class="mt-8">
-    <div class="text-xs uppercase tracking-widest text-brand-muted mb-3">Recent scans in this session</div>
-    <ul class="space-y-1 text-xs font-mono">
-      <li *ngFor="let h of history(); let i = index"
-          class="flex items-center gap-4 text-brand-muted">
-        <span [ngClass]="colorFor(h.risk)" class="font-semibold w-16">{{ h.risk }}</span>
-        <span>{{ h.latencyMs }}ms</span>
-        <span>{{ h.scanId.slice(0, 8) }}</span>
-      </li>
-    </ul>
-  </div>
+&#123;
+  <span class="text-brand-low">"input"</span>: <span class="text-brand-medium">"Ignore previous instructions…"</span>
+&#125;</pre>
+        </div>
+        <div class="rounded-xl border border-brand-line bg-brand-surface overflow-hidden">
+          <div class="px-4 py-2.5 border-b border-brand-line text-xs font-mono text-brand-muted flex items-center gap-2">
+            200 OK &middot; <span class="text-brand-text">ScanResponse</span>
+          </div>
+          <pre class="p-4 font-mono text-xs leading-relaxed text-brand-text overflow-x-auto m-0">&#123;
+  <span class="text-brand-low">"risk"</span>: <span class="text-brand-high">"HIGH"</span>,
+  <span class="text-brand-low">"reasons"</span>: [&#123; <span class="text-brand-low">"code"</span>, <span class="text-brand-low">"detail"</span> &#125;],
+  <span class="text-brand-low">"latencyMs"</span>: <span class="text-brand-medium">3</span>,
+  <span class="text-brand-low">"scanner"</span>: <span class="text-brand-medium">"rules"</span>,
+  <span class="text-brand-low">"scanId"</span>: <span class="text-brand-medium">"uuid-v4"</span>,
+  <span class="text-brand-low">"rulesetVersion"</span>: <span class="text-brand-medium">"1.1.0"</span>
+&#125;</pre>
+        </div>
+      </div>
+      <p class="mt-4 text-sm text-brand-muted max-w-2xl">
+        SHA-256 input hashing on by default. MySQL audit log via Flyway. Rate-limited
+        behind nginx. Full spec in the README.
+      </p>
+    </section>
 
-  <!-- Footer: CTA + author links. Kept deliberately minimal so the
-       page has a calm post-scan resting state that a silent screen
-       recording can close on. -->
-  <footer class="mt-12 pt-6 border-t border-brand-line flex flex-wrap items-baseline gap-x-6 gap-y-2 text-sm">
-    <div class="text-brand-muted">
-      Built by <span class="text-brand-text font-medium">Sol Omayoglu</span>
-      — an AI-native developer demo.
+    <!-- Session history -->
+    <div *ngIf="history().length > 1" class="mt-14">
+      <div class="text-[10px] font-mono uppercase tracking-[0.2em] text-brand-muted mb-3">Session history</div>
+      <div class="rounded-xl border border-brand-line bg-brand-surface overflow-hidden divide-y divide-brand-line/60">
+        <div *ngFor="let h of history(); let i = index"
+             class="px-4 py-2.5 flex items-center gap-5 text-xs font-mono hover:bg-brand-bg/40 transition">
+          <span class="text-brand-muted/60 w-4 tabular-nums">{{ i + 1 }}</span>
+          <span class="font-semibold w-14" [ngClass]="colorFor(h.risk)">{{ h.risk }}</span>
+          <span class="text-brand-muted tabular-nums w-14">{{ h.latencyMs }}ms</span>
+          <span class="text-brand-muted/60 ml-auto">{{ h.scanId.slice(0, 8) }}</span>
+        </div>
+      </div>
     </div>
-    <a href="mailto:solomayoglu&#64;gmail.com"
-       class="text-brand-accent hover:underline">solomayoglu&#64;gmail.com</a>
-    <a href="https://github.com/picoSols/prompt-shield-java"
-       target="_blank" rel="noopener"
-       class="text-brand-accent hover:underline">github.com/picoSols/prompt-shield-java</a>
-    <a href="https://github.com/picoSols"
-       target="_blank" rel="noopener"
-       class="text-brand-muted hover:text-brand-accent hover:underline">github.com/picoSols</a>
-  </footer>
-</section>
+
+    <!-- Footer -->
+    <footer class="mt-20 pt-8 border-t border-brand-line">
+      <div class="flex flex-wrap items-baseline gap-x-8 gap-y-3 text-sm">
+        <div class="text-brand-muted">
+          Built by <span class="text-brand-text font-medium">Sol Omayoglu</span> —
+          <a href="https://github.com/picoSols" target="_blank" rel="noopener"
+             class="text-brand-muted hover:text-brand-accent hover:underline transition">
+            github.com/picoSols
+          </a>
+        </div>
+        <a href="mailto:solomayoglu&#64;gmail.com"
+           class="text-brand-accent hover:underline">solomayoglu&#64;gmail.com</a>
+        <a href="https://github.com/picoSols/prompt-shield-java"
+           target="_blank" rel="noopener"
+           class="text-brand-accent hover:underline">view source</a>
+      </div>
+    </footer>
+  </section>
+</div>
