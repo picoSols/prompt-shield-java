@@ -14,7 +14,10 @@ import { FIXTURES, Fixture } from './scan.fixtures';
 export class ScanComponent {
   private scanService = inject(ScanService);
 
-  readonly input = signal('');
+  // Pre-load the textbox with the "Resume excerpt (safe)" fixture so the
+  // page is never empty on first paint — the user can hit Scan immediately
+  // without having to type or pick a chip.
+  readonly input = signal(FIXTURES[0].text);
   readonly scanning = signal(false);
   readonly error = signal<string | null>(null);
   readonly result = signal<ScanResponse | null>(null);
