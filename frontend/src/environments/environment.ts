@@ -8,6 +8,6 @@ declare global {
 }
 
 export const environment = {
-  production: false,
+  production: true,
   apiBase: (typeof window !== 'undefined' && window.__API_BASE__) || ''
 };
