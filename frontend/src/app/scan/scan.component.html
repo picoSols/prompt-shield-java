@@ -16,7 +16,8 @@
 
     <!-- Hero -->
     <header class="mb-14 max-w-3xl">
-      <h1 class="text-[2.5rem] md:text-[3.5rem] font-semibold tracking-tight leading-[1.02]">
+      <h1 class="text-4xl sm:text-5xl md:text-6xl font-semibold tracking-tight"
+          style="line-height: 1.05;">
         Prompt-injection defence,
         <span class="block text-brand-muted">shipped as a microservice.</span>
       </h1>
@@ -110,7 +111,7 @@
 
       <!-- Fixtures -->
       <div class="px-6 pb-6">
-        <div class="text-[10px] font-mono uppercase tracking-[0.2em] text-brand-muted mb-3">
+        <div class="text-[10px] font-mono uppercase tracking-widest text-brand-muted mb-3">
           Preloaded fixtures
         </div>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -137,7 +138,7 @@
       <div class="px-6 py-5 border-b border-brand-line flex items-start justify-between flex-wrap gap-4">
         <div class="flex items-center gap-5">
           <div>
-            <div class="text-[10px] font-mono uppercase tracking-[0.2em] text-brand-muted mb-1">verdict</div>
+            <div class="text-[10px] font-mono uppercase tracking-widest text-brand-muted mb-1">verdict</div>
             <div class="text-5xl font-bold tracking-tight leading-none" [ngClass]="riskColor()">
               {{ r.risk }}
             </div>
@@ -154,21 +155,21 @@
           </div>
         </div>
         <div class="text-right text-xs font-mono text-brand-muted/70">
-          <div class="uppercase tracking-[0.2em] text-[10px] mb-1">scan id</div>
+          <div class="uppercase tracking-widest text-[10px] mb-1">scan id</div>
           <div>{{ r.scanId.slice(0, 8) }}…{{ r.scanId.slice(-4) }}</div>
         </div>
       </div>
 
       <div class="p-6" *ngIf="r.reasons.length">
-        <div class="text-[10px] font-mono uppercase tracking-[0.2em] text-brand-muted mb-4">
+        <div class="text-[10px] font-mono uppercase tracking-widest text-brand-muted mb-4">
           {{ r.reasons.length }} {{ r.reasons.length === 1 ? 'rule matched' : 'rules matched' }}
         </div>
         <ul class="divide-y divide-brand-line/50">
           <li *ngFor="let reason of r.reasons; let i = index"
-              class="py-3 first:pt-0 last:pb-0 grid grid-cols-[1.5rem_auto_1fr] items-start gap-x-4">
-            <span class="text-xs font-mono text-brand-muted/60 pt-0.5">{{ i + 1 }}</span>
-            <span class="font-mono text-xs text-brand-accent whitespace-nowrap pt-0.5">{{ reason.code }}</span>
-            <span class="text-sm text-brand-text break-words">{{ reason.detail }}</span>
+              class="py-3 first:pt-0 last:pb-0 flex items-start gap-4 flex-wrap sm:flex-nowrap">
+            <span class="text-xs font-mono text-brand-muted/60 pt-0.5 w-6 flex-shrink-0">{{ i + 1 }}</span>
+            <span class="font-mono text-xs text-brand-accent whitespace-nowrap pt-0.5 flex-shrink-0">{{ reason.code }}</span>
+            <span class="text-sm text-brand-text break-words flex-1 min-w-0">{{ reason.detail }}</span>
           </li>
         </ul>
       </div>
@@ -180,7 +181,7 @@
 
     <!-- HTTP contract -->
     <section class="mt-16">
-      <div class="text-[10px] font-mono uppercase tracking-[0.2em] text-brand-muted mb-4">HTTP contract</div>
+      <div class="text-[10px] font-mono uppercase tracking-widest text-brand-muted mb-4">HTTP contract</div>
       <div class="grid md:grid-cols-2 gap-3">
         <div class="rounded-xl border border-brand-line bg-brand-surface overflow-hidden">
           <div class="px-4 py-2.5 border-b border-brand-line text-xs font-mono text-brand-muted flex items-center gap-2">
@@ -214,7 +215,7 @@
 
     <!-- Session history -->
     <div *ngIf="history().length > 1" class="mt-14">
-      <div class="text-[10px] font-mono uppercase tracking-[0.2em] text-brand-muted mb-3">Session history</div>
+      <div class="text-[10px] font-mono uppercase tracking-widest text-brand-muted mb-3">Session history</div>
       <div class="rounded-xl border border-brand-line bg-brand-surface overflow-hidden divide-y divide-brand-line/60">
         <div *ngFor="let h of history(); let i = index"
              class="px-4 py-2.5 flex items-center gap-5 text-xs font-mono hover:bg-brand-bg/40 transition">
