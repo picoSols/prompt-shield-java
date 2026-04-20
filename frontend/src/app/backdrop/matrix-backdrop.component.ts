@@ -73,6 +73,11 @@ export class MatrixBackdropComponent implements AfterViewInit, OnDestroy {
   // segments. Spread controls falloff width in slots.
   private readonly CIRCLE_SPREAD = 1;
 
+  // Octagram rotation: one full revolution per ROTATION_PERIOD_MS.
+  // 3 min / revolution is slow enough to feel meditative but visible
+  // within the ~32s effect lifecycle.
+  private readonly ROTATION_PERIOD_MS = 180000;
+
   private readonly PALETTES = {
     dark:  { bg: '11,13,18',    drop: '242,152,72', hot: '255,200,140', line: '242,152,72' },
     light: { bg: '248,250,252', drop: '234,88,12',  hot: '240,125,40',  line: '234,88,12'  },
@@ -86,6 +91,7 @@ export class MatrixBackdropComponent implements AfterViewInit, OnDestroy {
     cy: 0,
     r: 0,
     circleR: 0,
+    pairs: [] as [number, number][],
     segments: [] as {
       x1: number;
       y1: number;
@@ -224,6 +230,7 @@ export class MatrixBackdropComponent implements AfterViewInit, OnDestroy {
       [1, 3], [3, 5], [5, 7], [7, 1],
       [0, 3], [3, 6], [6, 1], [1, 4], [4, 7], [7, 2], [2, 5], [5, 0],
     ];
+    this.geometry.pairs = pairs;
     this.geometry.segments = new Array(pairs.length);
     for (let k = 0; k < pairs.length; k++) {
       const a = verts[pairs[k][0]];
@@ -300,9 +307,33 @@ export class MatrixBackdropComponent implements AfterViewInit, OnDestroy {
     }
   }
 
+  // Recompute the 8 vertices + 16 segment endpoints under the current
+  // rotation angle. Heat arrays stay attached to segments — each heat
+  // slot is parameterised by t along the segment, so as the segment
+  // moves the painted highlight moves with it.
+  private rotateGeometry(elapsed: number): void {
+    if (!this.geometry.pairs.length) return;
+    const angle = (elapsed / this.ROTATION_PERIOD_MS) * Math.PI * 2;
+    const verts = new Array<{ x: number; y: number }>(8);
+    for (let i = 0; i < 8; i++) {
+      const theta = (i * Math.PI) / 4 + angle;
+      verts[i] = {
+        x: this.geometry.cx + Math.cos(theta) * this.geometry.r,
+        y: this.geometry.cy + Math.sin(theta) * this.geometry.r,
+      };
+    }
+    for (let k = 0; k < this.geometry.pairs.length; k++) {
+      const a = verts[this.geometry.pairs[k][0]];
+      const b = verts[this.geometry.pairs[k][1]];
+      const seg = this.geometry.segments[k];
+      seg.x1 = a.x; seg.y1 = a.y;
+      seg.x2 = b.x; seg.y2 = b.y;
+    }
+  }
+
   private drawGeometry(layerAlpha: number): void {
     this.ctx.lineCap = 'round';
-    this.ctx.lineWidth = 1;
+    this.ctx.lineWidth = 2;
     this.ctx.strokeStyle = `rgba(${this.palette.line},1)`;
 
     for (const seg of this.geometry.segments) {
@@ -385,6 +416,7 @@ export class MatrixBackdropComponent implements AfterViewInit, OnDestroy {
     this.ctx.fillStyle = `rgba(${this.palette.bg},${trailAlpha})`;
     this.ctx.fillRect(0, 0, this.dimensions.w, this.dimensions.h);
 
+    this.rotateGeometry(elapsed);
     this.drawGeometry(layerAlpha);
 
     this.ctx.globalAlpha = dropAlpha;
