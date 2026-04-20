@@ -9,15 +9,14 @@ import {
 } from '@angular/core';
 
 /**
- * Matrix-style rain backdrop + sacred-geometry overlay.
+ * Matrix-style rain backdrop + rub-al-hizb-style sacred-geometry overlay.
  *
- * An octagram ({8/3}) sits behind the rain with its centre off the
- * top-right of the viewport so only one corner peeks in. The star is
- * drawn as a faint persistent outline; crossings by matrix characters
- * heat up a short sub-section of the nearest segment and briefly
- * brighten only that small stretch. Heat decays ~halving per 2 seconds,
- * so recently crossed pieces linger before returning to the base. No
- * wider glow — the effect stays on the line itself.
+ * Two overlapping squares — one axis-aligned, one rotated 45° — enclosed
+ * by a single large circle, with the composition's centre positioned off
+ * the top-right of the viewport so only one corner is visible. Geometry
+ * starts invisible; only where a matrix character has recently crossed a
+ * line or the circle's arc does that tiny stretch light up, then fades
+ * (~2s half-life). Characters paint the pattern in as they pass.
  */
 @Component({
   selector: 'app-matrix-backdrop',
@@ -62,11 +61,12 @@ export class MatrixBackdropComponent implements AfterViewInit, OnDestroy {
   private readonly totalMs =
     this.introMs + this.decayMs + this.ambientMs + this.fadeMs;
 
-  // ~5px sub-segments, half-life ~2s, small local highlight on crossing.
   private readonly SUB_PX = 5;
   private readonly HEAT_DECAY = 0.99;
   private readonly HIT_RADIUS = 20;
   private readonly HEAT_SPREAD = 2;
+  private readonly CIRCLE_SLOTS = 180;
+  private readonly CIRCLE_SPREAD = 2;
 
   private readonly PALETTES = {
     dark:  { bg: '11,13,18',    drop: '242,152,72', hot: '255,200,140', line: '242,152,72' },
@@ -76,10 +76,11 @@ export class MatrixBackdropComponent implements AfterViewInit, OnDestroy {
 
   private ctx!: CanvasRenderingContext2D;
   private drops: { x: number; y: number; speed: number; hot: boolean }[] = [];
-  private octagram = {
+  private geometry = {
     cx: 0,
     cy: 0,
     r: 0,
+    circleR: 0,
     segments: [] as {
       x1: number;
       y1: number;
@@ -89,6 +90,13 @@ export class MatrixBackdropComponent implements AfterViewInit, OnDestroy {
       N: number;
       heats: Float32Array;
     }[],
+    circle: null as null | {
+      cx: number;
+      cy: number;
+      r: number;
+      N: number;
+      heats: Float32Array;
+    },
   };
 
   private rafId = 0;
@@ -182,39 +190,51 @@ export class MatrixBackdropComponent implements AfterViewInit, OnDestroy {
     this.ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
     this.ctx.font = `500 ${this.cellSize - 4}px "JetBrains Mono", ui-monospace, monospace`;
     this.ctx.textBaseline = 'top';
-    this.setupOctagram();
+    this.setupGeometry();
     this.seedDrops();
   }
 
-  private setupOctagram(): void {
-    this.octagram.cx = this.dimensions.w * 1.02;
-    this.octagram.cy = -this.dimensions.h * 0.08;
-    this.octagram.r = Math.max(this.dimensions.w, this.dimensions.h) * 0.68;
+  private setupGeometry(): void {
+    this.geometry.cx = this.dimensions.w * 1.04;
+    this.geometry.cy = -this.dimensions.h * 0.10;
+    this.geometry.r = Math.max(this.dimensions.w, this.dimensions.h) * 0.70;
+    this.geometry.circleR = this.geometry.r * 1.08;
 
     const verts = new Array<{ x: number; y: number }>(8);
     for (let i = 0; i < 8; i++) {
       const theta = (i * Math.PI) / 4;
       verts[i] = {
-        x: this.octagram.cx + Math.cos(theta) * this.octagram.r,
-        y: this.octagram.cy + Math.sin(theta) * this.octagram.r,
+        x: this.geometry.cx + Math.cos(theta) * this.geometry.r,
+        y: this.geometry.cy + Math.sin(theta) * this.geometry.r,
       };
     }
-    this.octagram.segments = new Array(8);
-    for (let k = 0; k < 8; k++) {
-      const a = verts[k];
-      const b = verts[(k + 3) % 8];
+
+    // Square A (axis-aligned): 0,2,4,6 connected in sequence.
+    // Square B (rotated 45°):   1,3,5,7 connected in sequence.
+    const pairs: [number, number][] = [
+      [0, 2], [2, 4], [4, 6], [6, 0],
+      [1, 3], [3, 5], [5, 7], [7, 1],
+    ];
+    this.geometry.segments = new Array(pairs.length);
+    for (let k = 0; k < pairs.length; k++) {
+      const a = verts[pairs[k][0]];
+      const b = verts[pairs[k][1]];
       const len = Math.hypot(b.x - a.x, b.y - a.y);
       const N = Math.max(8, Math.ceil(len / this.SUB_PX));
-      this.octagram.segments[k] = {
-        x1: a.x,
-        y1: a.y,
-        x2: b.x,
-        y2: b.y,
-        length: len,
-        N,
+      this.geometry.segments[k] = {
+        x1: a.x, y1: a.y, x2: b.x, y2: b.y,
+        length: len, N,
         heats: new Float32Array(N),
       };
     }
+
+    this.geometry.circle = {
+      cx: this.geometry.cx,
+      cy: this.geometry.cy,
+      r: this.geometry.circleR,
+      N: this.CIRCLE_SLOTS,
+      heats: new Float32Array(this.CIRCLE_SLOTS),
+    };
   }
 
   private seedDrops(): void {
@@ -232,16 +252,14 @@ export class MatrixBackdropComponent implements AfterViewInit, OnDestroy {
     const dx = s.x2 - s.x1;
     const dy = s.y2 - s.y1;
     const len2 = dx * dx + dy * dy;
-    if (len2 < 0.0001) {
-      return { dist: Math.hypot(px - s.x1, py - s.y1), t: 0 };
-    }
+    if (len2 < 0.0001) return { dist: Math.hypot(px - s.x1, py - s.y1), t: 0 };
     const t = Math.max(0, Math.min(1, ((px - s.x1) * dx + (py - s.y1) * dy) / len2));
     const cx = s.x1 + t * dx;
     const cy = s.y1 + t * dy;
     return { dist: Math.hypot(px - cx, py - cy), t };
   }
 
-  private bumpHeat(seg: { N: number; heats: Float32Array }, t: number, intensity: number): void {
+  private bumpSegmentHeat(seg: { N: number; heats: Float32Array }, t: number, intensity: number): void {
     let center = Math.floor(t * seg.N);
     if (center < 0) center = 0;
     if (center >= seg.N) center = seg.N - 1;
@@ -256,18 +274,25 @@ export class MatrixBackdropComponent implements AfterViewInit, OnDestroy {
     }
   }
 
-  private drawOctagram(layerAlpha: number): void {
+  private bumpCircleHeat(c: { N: number; heats: Float32Array }, angle01: number, intensity: number): void {
+    const center = Math.floor(angle01 * c.N);
+    for (let k = -this.CIRCLE_SPREAD; k <= this.CIRCLE_SPREAD; k++) {
+      const idx = ((center + k) % c.N + c.N) % c.N;
+      const d = Math.abs(k);
+      const falloff = 1 - d / (this.CIRCLE_SPREAD + 1);
+      const add = intensity * falloff;
+      if (add <= 0) continue;
+      const next = c.heats[idx] + add;
+      c.heats[idx] = next > 1 ? 1 : next;
+    }
+  }
+
+  private drawGeometry(layerAlpha: number): void {
     this.ctx.lineCap = 'round';
     this.ctx.lineWidth = 1;
     this.ctx.strokeStyle = `rgba(${this.palette.line},1)`;
 
-    for (const seg of this.octagram.segments) {
-      this.ctx.globalAlpha = 0.025 * layerAlpha;
-      this.ctx.beginPath();
-      this.ctx.moveTo(seg.x1, seg.y1);
-      this.ctx.lineTo(seg.x2, seg.y2);
-      this.ctx.stroke();
-
+    for (const seg of this.geometry.segments) {
       const invN = 1 / seg.N;
       const dx = seg.x2 - seg.x1;
       const dy = seg.y2 - seg.y1;
@@ -276,13 +301,31 @@ export class MatrixBackdropComponent implements AfterViewInit, OnDestroy {
         if (h > 0.004) {
           const a = i * invN;
           const b = (i + 1) * invN;
-          this.ctx.globalAlpha = h * 0.7 * layerAlpha;
+          this.ctx.globalAlpha = h * 0.75 * layerAlpha;
           this.ctx.beginPath();
           this.ctx.moveTo(seg.x1 + dx * a, seg.y1 + dy * a);
           this.ctx.lineTo(seg.x1 + dx * b, seg.y1 + dy * b);
           this.ctx.stroke();
         }
         seg.heats[i] *= this.HEAT_DECAY;
+      }
+    }
+
+    const c = this.geometry.circle;
+    if (c) {
+      const step = (Math.PI * 2) / c.N;
+      const base = -Math.PI;
+      for (let j = 0; j < c.N; j++) {
+        const hc = c.heats[j];
+        if (hc > 0.004) {
+          const a0 = base + j * step;
+          const a1 = base + (j + 1) * step;
+          this.ctx.globalAlpha = hc * 0.75 * layerAlpha;
+          this.ctx.beginPath();
+          this.ctx.arc(c.cx, c.cy, c.r, a0, a1);
+          this.ctx.stroke();
+        }
+        c.heats[j] *= this.HEAT_DECAY;
       }
     }
   }
@@ -305,10 +348,7 @@ export class MatrixBackdropComponent implements AfterViewInit, OnDestroy {
     let layerAlpha: number;
 
     if (elapsed < this.introMs) {
-      dropAlpha = 0.9;
-      trailAlpha = 0.08;
-      densityScale = 1;
-      layerAlpha = 1;
+      dropAlpha = 0.9; trailAlpha = 0.08; densityScale = 1; layerAlpha = 1;
     } else if (elapsed < this.introMs + this.decayMs) {
       const p = (elapsed - this.introMs) / this.decayMs;
       const ease = 1 - (1 - p) * (1 - p);
@@ -317,10 +357,7 @@ export class MatrixBackdropComponent implements AfterViewInit, OnDestroy {
       densityScale = 1 - ease * 0.85;
       layerAlpha = 1;
     } else if (elapsed < this.introMs + this.decayMs + this.ambientMs) {
-      dropAlpha = 0.15;
-      trailAlpha = 0.14;
-      densityScale = 0.15;
-      layerAlpha = 1;
+      dropAlpha = 0.15; trailAlpha = 0.14; densityScale = 0.15; layerAlpha = 1;
     } else {
       const fp = (elapsed - this.introMs - this.decayMs - this.ambientMs) / this.fadeMs;
       const fEase = fp * fp;
@@ -335,7 +372,7 @@ export class MatrixBackdropComponent implements AfterViewInit, OnDestroy {
     this.ctx.fillStyle = `rgba(${this.palette.bg},${trailAlpha})`;
     this.ctx.fillRect(0, 0, this.dimensions.w, this.dimensions.h);
 
-    this.drawOctagram(layerAlpha);
+    this.drawGeometry(layerAlpha);
 
     this.ctx.globalAlpha = dropAlpha;
     const active = Math.max(1, Math.floor(this.drops.length * densityScale));
@@ -349,10 +386,21 @@ export class MatrixBackdropComponent implements AfterViewInit, OnDestroy {
 
       const gx = d.x + this.cellSize / 2;
       const gy = d.y + this.cellSize / 2;
-      for (const seg of this.octagram.segments) {
+
+      for (const seg of this.geometry.segments) {
         const r = this.distToSeg(gx, gy, seg);
-        if (r.dist < this.HIT_RADIUS) {
-          this.bumpHeat(seg, r.t, 0.7);
+        if (r.dist < this.HIT_RADIUS) this.bumpSegmentHeat(seg, r.t, 0.7);
+      }
+
+      const c = this.geometry.circle;
+      if (c) {
+        const dxc = gx - c.cx;
+        const dyc = gy - c.cy;
+        const radial = Math.hypot(dxc, dyc);
+        if (Math.abs(radial - c.r) < this.HIT_RADIUS) {
+          const angle = Math.atan2(dyc, dxc);
+          const angle01 = (angle + Math.PI) / (Math.PI * 2);
+          this.bumpCircleHeat(c, angle01, 0.7);
         }
       }
 
