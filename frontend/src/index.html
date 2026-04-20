@@ -8,10 +8,13 @@
   <meta name="theme-color" content="#0b0d12">
   <script>
     // Apply stored theme override before first paint to avoid FOUC.
-    // "auto" or unset falls through to prefers-color-scheme via CSS.
+    // Cookie (.omayoglu.com) is the cross-subdomain source of truth so
+    // the preference carries between the main site and this demo;
+    // localStorage is a same-origin fallback.
     (function () {
       try {
-        var t = localStorage.getItem('theme');
+        var m = document.cookie.match(/(?:^|;\s*)theme=(light|dark)(?:;|$)/);
+        var t = m ? m[1] : localStorage.getItem('theme');
         if (t === 'light' || t === 'dark') {
           document.documentElement.setAttribute('data-theme', t);
         }

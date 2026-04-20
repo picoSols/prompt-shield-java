@@ -90,8 +90,13 @@ export class ThemeToggleComponent {
     if (meta) meta.setAttribute('content', effective === 'dark' ? '#0b0d12' : '#f8fafc');
   }
 
+  // Cookie scoped to .omayoglu.com is the cross-subdomain source of
+  // truth; localStorage is a same-origin fallback (localhost dev, or if
+  // cookies are blocked by the user).
   private read(): Mode {
     try {
+      const match = document.cookie.match(/(?:^|;\s*)theme=(light|dark)(?:;|$)/);
+      if (match) return match[1] as Mode;
       const v = localStorage.getItem(STORAGE_KEY);
       return v === 'light' || v === 'dark' ? v : 'auto';
     } catch {
@@ -101,8 +106,15 @@ export class ThemeToggleComponent {
 
   private persist(m: Mode): void {
     try {
-      if (m === 'auto') localStorage.removeItem(STORAGE_KEY);
-      else localStorage.setItem(STORAGE_KEY, m);
+      if (m === 'auto') {
+        localStorage.removeItem(STORAGE_KEY);
+        document.cookie = 'theme=; domain=.omayoglu.com; path=/; max-age=0; SameSite=Lax';
+        document.cookie = 'theme=; path=/; max-age=0; SameSite=Lax';
+      } else {
+        localStorage.setItem(STORAGE_KEY, m);
+        document.cookie =
+          'theme=' + m + '; domain=.omayoglu.com; path=/; max-age=31536000; SameSite=Lax';
+      }
     } catch {}
   }
 }
