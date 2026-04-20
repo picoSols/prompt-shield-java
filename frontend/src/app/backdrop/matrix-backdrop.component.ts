@@ -214,11 +214,15 @@ export class MatrixBackdropComponent implements AfterViewInit, OnDestroy {
       };
     }
 
-    // Square A (axis-aligned): 0,2,4,6 connected in sequence.
-    // Square B (rotated 45°):   1,3,5,7 connected in sequence.
+    // Layered 8-point geometry on the same 8 vertices:
+    //   Square A (axis-aligned): 0,2,4,6 connected in sequence.
+    //   Square B (rotated 45°):  1,3,5,7 connected in sequence.
+    //   {8/3} pointy star:       each vertex connects to the one 3 steps away.
+    // 16 straight segments total, all sharing the octagram's vertices and centre.
     const pairs: [number, number][] = [
       [0, 2], [2, 4], [4, 6], [6, 0],
       [1, 3], [3, 5], [5, 7], [7, 1],
+      [0, 3], [3, 6], [6, 1], [1, 4], [4, 7], [7, 2], [2, 5], [5, 0],
     ];
     this.geometry.segments = new Array(pairs.length);
     for (let k = 0; k < pairs.length; k++) {
