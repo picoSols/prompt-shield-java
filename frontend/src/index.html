@@ -5,6 +5,19 @@
   <title>prompt-shield — live demo</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Live demo of prompt-shield-java — a Spring Boot microservice for LLM prompt-injection defence.">
+  <meta name="theme-color" content="#0b0d12">
+  <script>
+    // Apply stored theme override before first paint to avoid FOUC.
+    // "auto" or unset falls through to prefers-color-scheme via CSS.
+    (function () {
+      try {
+        var t = localStorage.getItem('theme');
+        if (t === 'light' || t === 'dark') {
+          document.documentElement.setAttribute('data-theme', t);
+        }
+      } catch (e) {}
+    })();
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">

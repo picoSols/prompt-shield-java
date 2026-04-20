@@ -23,7 +23,7 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --brand-bg: 11 13 18;
     --brand-surface: 20 23 31;
     --brand-line: 31 36 48;
@@ -35,6 +35,32 @@
     --brand-high: 232 97 90;
     color-scheme: dark;
   }
+}
+
+/* Explicit user override — beats the media query above. */
+:root[data-theme="light"] {
+  --brand-bg: 248 250 252;
+  --brand-surface: 255 255 255;
+  --brand-line: 226 232 240;
+  --brand-text: 15 23 42;
+  --brand-muted: 100 116 139;
+  --brand-accent: 234 88 12;
+  --brand-low: 22 163 74;
+  --brand-medium: 217 119 6;
+  --brand-high: 220 38 38;
+  color-scheme: light;
+}
+:root[data-theme="dark"] {
+  --brand-bg: 11 13 18;
+  --brand-surface: 20 23 31;
+  --brand-line: 31 36 48;
+  --brand-text: 230 232 239;
+  --brand-muted: 139 146 163;
+  --brand-accent: 242 152 72;
+  --brand-low: 85 194 138;
+  --brand-medium: 232 184 78;
+  --brand-high: 232 97 90;
+  color-scheme: dark;
 }
 
 html, body { height: 100%; }

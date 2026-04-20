@@ -4,11 +4,12 @@ import { CommonModule } from '@angular/common';
 import { ScanService } from './scan.service';
 import { ScanResponse, RiskLevel } from './scan.types';
 import { FIXTURES, Fixture } from './scan.fixtures';
+import { ThemeToggleComponent } from '../theme/theme-toggle.component';
 
 @Component({
   selector: 'app-scan',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ThemeToggleComponent],
   templateUrl: './scan.component.html'
 })
 export class ScanComponent {
