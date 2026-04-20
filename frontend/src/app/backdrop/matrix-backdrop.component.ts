@@ -92,7 +92,28 @@ export class MatrixBackdropComponent implements AfterViewInit, OnDestroy {
   private dpr = 1;
   private visibilityHandler?: () => void;
   private resizeHandler?: () => void;
+  private themeHandler?: () => void;
+  private themeObserver?: MutationObserver;
+  private themeMq?: MediaQueryList;
   private dimensions = { w: 0, h: 0 };
+
+  // Palettes keyed by effective theme. Trail fades toward the page bg;
+  // drop/hot/line are the brand accent in each theme (darker on light
+  // so the rain reads against a near-white surface).
+  private readonly PALETTES = {
+    dark:  { bg: '11,13,18',    drop: '242,152,72', hot: '255,200,140', line: '242,152,72' },
+    light: { bg: '248,250,252', drop: '234,88,12',  hot: '240,125,40',  line: '234,88,12'  },
+  } as const;
+  private palette: { bg: string; drop: string; hot: string; line: string } = this.PALETTES.dark;
+
+  private resolveTheme(): 'light' | 'dark' {
+    const explicit = document.documentElement.getAttribute('data-theme');
+    if (explicit === 'light' || explicit === 'dark') return explicit;
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  }
+  private updatePalette = (): void => {
+    this.palette = this.PALETTES[this.resolveTheme()];
+  };
 
   ngAfterViewInit(): void {
     const reduced =
@@ -123,6 +144,22 @@ export class MatrixBackdropComponent implements AfterViewInit, OnDestroy {
     window.addEventListener('resize', this.resizeHandler, { passive: true });
     document.addEventListener('visibilitychange', this.visibilityHandler);
 
+    // Theme sync — update the canvas palette on explicit override
+    // (data-theme attribute on <html>) or on system preference change.
+    this.updatePalette();
+    try {
+      this.themeObserver = new MutationObserver(this.updatePalette);
+      this.themeObserver.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['data-theme'],
+      });
+    } catch {}
+    this.themeMq = window.matchMedia('(prefers-color-scheme: dark)');
+    this.themeHandler = this.updatePalette;
+    if (this.themeMq.addEventListener) {
+      this.themeMq.addEventListener('change', this.themeHandler);
+    }
+
     this.t0 = performance.now();
     this.zone.runOutsideAngular(() => this.tick());
   }
@@ -132,6 +169,10 @@ export class MatrixBackdropComponent implements AfterViewInit, OnDestroy {
     this.running = false;
     if (this.resizeHandler) window.removeEventListener('resize', this.resizeHandler);
     if (this.visibilityHandler) document.removeEventListener('visibilitychange', this.visibilityHandler);
+    if (this.themeObserver) this.themeObserver.disconnect();
+    if (this.themeMq && this.themeHandler && this.themeMq.removeEventListener) {
+      this.themeMq.removeEventListener('change', this.themeHandler);
+    }
   }
 
   private resize(reseed = false): void {
@@ -227,7 +268,7 @@ export class MatrixBackdropComponent implements AfterViewInit, OnDestroy {
 
     this.ctx.globalCompositeOperation = 'source-over';
     this.ctx.globalAlpha = 1;
-    this.ctx.fillStyle = `rgba(11,13,18,${trailAlpha})`;
+    this.ctx.fillStyle = `rgba(${this.palette.bg},${trailAlpha})`;
     this.ctx.fillRect(0, 0, this.dimensions.w, this.dimensions.h);
 
     if (
@@ -248,7 +289,7 @@ export class MatrixBackdropComponent implements AfterViewInit, OnDestroy {
       }
       const llAlpha = Math.sin(lp * Math.PI) * 0.14 * layerAlpha;
       this.ctx.globalAlpha = llAlpha;
-      this.ctx.strokeStyle = 'rgba(242,152,72,1)';
+      this.ctx.strokeStyle = `rgba(${this.palette.line},1)`;
       this.ctx.lineWidth = 0.6;
       this.ctx.beginPath();
       this.ctx.moveTo(ll.x1, ll.y1);
@@ -263,8 +304,8 @@ export class MatrixBackdropComponent implements AfterViewInit, OnDestroy {
       const glyph = this.glyphs[(Math.random() * this.glyphs.length) | 0];
 
       this.ctx.fillStyle = d.hot
-        ? 'rgba(255, 200, 140, 0.95)'
-        : 'rgba(242, 152, 72, 0.65)';
+        ? `rgba(${this.palette.hot},0.95)`
+        : `rgba(${this.palette.drop},0.65)`;
       this.ctx.fillText(glyph, d.x, d.y);
 
       d.y += d.speed;
