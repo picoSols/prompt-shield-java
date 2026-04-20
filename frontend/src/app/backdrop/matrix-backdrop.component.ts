@@ -52,8 +52,8 @@ export class MatrixBackdropComponent implements AfterViewInit, OnDestroy {
     '0123456789ABCDEF' +
     '⊕⊗⊙◉◎⬡⬢△▽◇◈✦✧✺⎔';
 
-  private readonly cellSize = 26;
-  private readonly spacing = 30;
+  private readonly cellSize = 29;
+  private readonly spacing = 33;
   private readonly introMs = 2000;
   private readonly decayMs = 1000;
   private readonly ambientMs = 25000;
@@ -61,12 +61,15 @@ export class MatrixBackdropComponent implements AfterViewInit, OnDestroy {
   private readonly totalMs =
     this.introMs + this.decayMs + this.ambientMs + this.fadeMs;
 
+  // Tight spread + small hit radius + low bump intensity so the painted
+  // highlight stays roughly 1.5× the glyph size, not much larger.
   private readonly SUB_PX = 5;
   private readonly HEAT_DECAY = 0.99;
-  private readonly HIT_RADIUS = 20;
-  private readonly HEAT_SPREAD = 2;
+  private readonly HIT_RADIUS = 15;
+  private readonly HEAT_SPREAD = 1;
+  private readonly HEAT_INTENSITY = 0.35;
   private readonly CIRCLE_SLOTS = 180;
-  private readonly CIRCLE_SPREAD = 2;
+  private readonly CIRCLE_SPREAD = 1;
 
   private readonly PALETTES = {
     dark:  { bg: '11,13,18',    drop: '242,152,72', hot: '255,200,140', line: '242,152,72' },
@@ -239,11 +242,11 @@ export class MatrixBackdropComponent implements AfterViewInit, OnDestroy {
 
   private seedDrops(): void {
     const cols = Math.max(1, Math.floor(this.dimensions.w / this.spacing));
-    const count = Math.max(12, Math.floor(cols * 0.7));
+    const count = Math.max(12, Math.floor(cols * 0.77));
     this.drops = new Array(count).fill(0).map(() => ({
       x: Math.random() * this.dimensions.w,
       y: Math.random() * this.dimensions.h - this.dimensions.h,
-      speed: 1.2 + Math.random() * 2.5,
+      speed: 1.08 + Math.random() * 2.25,
       hot: Math.random() < 0.15,
     }));
   }
@@ -389,7 +392,7 @@ export class MatrixBackdropComponent implements AfterViewInit, OnDestroy {
 
       for (const seg of this.geometry.segments) {
         const r = this.distToSeg(gx, gy, seg);
-        if (r.dist < this.HIT_RADIUS) this.bumpSegmentHeat(seg, r.t, 0.7);
+        if (r.dist < this.HIT_RADIUS) this.bumpSegmentHeat(seg, r.t, this.HEAT_INTENSITY);
       }
 
       const c = this.geometry.circle;
@@ -400,7 +403,7 @@ export class MatrixBackdropComponent implements AfterViewInit, OnDestroy {
         if (Math.abs(radial - c.r) < this.HIT_RADIUS) {
           const angle = Math.atan2(dyc, dxc);
           const angle01 = (angle + Math.PI) / (Math.PI * 2);
-          this.bumpCircleHeat(c, angle01, 0.7);
+          this.bumpCircleHeat(c, angle01, this.HEAT_INTENSITY);
         }
       }
 
@@ -408,7 +411,7 @@ export class MatrixBackdropComponent implements AfterViewInit, OnDestroy {
       if (d.y > this.dimensions.h + this.cellSize) {
         d.y = -this.cellSize - Math.random() * 80;
         d.x = Math.random() * this.dimensions.w;
-        d.speed = 1.2 + Math.random() * 2.5;
+        d.speed = 1.08 + Math.random() * 2.25;
         d.hot = Math.random() < 0.15;
       }
     }
