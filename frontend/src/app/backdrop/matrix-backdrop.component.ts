@@ -68,7 +68,9 @@ export class MatrixBackdropComponent implements AfterViewInit, OnDestroy {
   private readonly HIT_RADIUS = 15;
   private readonly HEAT_SPREAD = 1;
   private readonly HEAT_INTENSITY = 0.35;
-  private readonly CIRCLE_SLOTS = 180;
+  // Circle slot count is computed at setupGeometry time so each slot is
+  // roughly SUB_PX of arc length — same fragmentation as the straight
+  // segments. Spread controls falloff width in slots.
   private readonly CIRCLE_SPREAD = 1;
 
   private readonly PALETTES = {
@@ -231,12 +233,16 @@ export class MatrixBackdropComponent implements AfterViewInit, OnDestroy {
       };
     }
 
+    const circleN = Math.max(
+      180,
+      Math.ceil((2 * Math.PI * this.geometry.circleR) / this.SUB_PX),
+    );
     this.geometry.circle = {
       cx: this.geometry.cx,
       cy: this.geometry.cy,
       r: this.geometry.circleR,
-      N: this.CIRCLE_SLOTS,
-      heats: new Float32Array(this.CIRCLE_SLOTS),
+      N: circleN,
+      heats: new Float32Array(circleN),
     };
   }
 
