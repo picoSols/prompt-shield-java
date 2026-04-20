@@ -11,17 +11,13 @@ import {
 /**
  * Matrix-style rain backdrop + sacred-geometry overlay.
  *
- * An octagram ({8/3} — 8 vertices connected skip-3) sits behind the rain
- * with its centre positioned off the top-right of the viewport, so only
- * one corner of the star peeks into the frame. The octagram renders at a
- * very faint persistent tint; when a falling matrix character passes
- * near one of its segments, that segment's "heat" bumps to full and
- * decays slowly over several seconds, leaving a temporary bright streak
- * where the rain touched the geometry. Each crossing also spawns a
- * short-lived radial glow centred on the contact point — an AOE bloom.
- *
- * Timeline: 2s intro → 1s decay → 25s ambient → 4s fade to zero → stop.
- * Palette follows the effective theme.
+ * An octagram ({8/3}) sits behind the rain with its centre off the
+ * top-right of the viewport so only one corner peeks in. The star is
+ * drawn as a faint persistent outline; crossings by matrix characters
+ * heat up a short sub-section of the nearest segment and briefly
+ * brighten only that small stretch. Heat decays ~halving per 2 seconds,
+ * so recently crossed pieces linger before returning to the base. No
+ * wider glow — the effect stays on the line itself.
  */
 @Component({
   selector: 'app-matrix-backdrop',
@@ -66,9 +62,11 @@ export class MatrixBackdropComponent implements AfterViewInit, OnDestroy {
   private readonly totalMs =
     this.introMs + this.decayMs + this.ambientMs + this.fadeMs;
 
-  // heat decays ~halving per second; crossings stay visible several sec.
-  private readonly HEAT_DECAY = 0.985;
-  private readonly HIT_RADIUS = 22;
+  // ~5px sub-segments, half-life ~2s, small local highlight on crossing.
+  private readonly SUB_PX = 5;
+  private readonly HEAT_DECAY = 0.99;
+  private readonly HIT_RADIUS = 20;
+  private readonly HEAT_SPREAD = 2;
 
   private readonly PALETTES = {
     dark:  { bg: '11,13,18',    drop: '242,152,72', hot: '255,200,140', line: '242,152,72' },
@@ -78,19 +76,25 @@ export class MatrixBackdropComponent implements AfterViewInit, OnDestroy {
 
   private ctx!: CanvasRenderingContext2D;
   private drops: { x: number; y: number; speed: number; hot: boolean }[] = [];
-  private glows: { x: number; y: number; life: number; maxLife: number; maxAlpha: number }[] = [];
   private octagram = {
     cx: 0,
     cy: 0,
     r: 0,
-    segments: [] as { x1: number; y1: number; x2: number; y2: number; heat: number }[],
+    segments: [] as {
+      x1: number;
+      y1: number;
+      x2: number;
+      y2: number;
+      length: number;
+      N: number;
+      heats: Float32Array;
+    }[],
   };
 
   private rafId = 0;
   private running = true;
   private finished = false;
   private t0 = 0;
-  private lastFrame = 0;
   private dpr = 1;
   private dimensions = { w: 0, h: 0 };
 
@@ -187,7 +191,7 @@ export class MatrixBackdropComponent implements AfterViewInit, OnDestroy {
     this.octagram.cy = -this.dimensions.h * 0.08;
     this.octagram.r = Math.max(this.dimensions.w, this.dimensions.h) * 0.68;
 
-    const verts = new Array(8);
+    const verts = new Array<{ x: number; y: number }>(8);
     for (let i = 0; i < 8; i++) {
       const theta = (i * Math.PI) / 4;
       verts[i] = {
@@ -199,7 +203,17 @@ export class MatrixBackdropComponent implements AfterViewInit, OnDestroy {
     for (let k = 0; k < 8; k++) {
       const a = verts[k];
       const b = verts[(k + 3) % 8];
-      this.octagram.segments[k] = { x1: a.x, y1: a.y, x2: b.x, y2: b.y, heat: 0 };
+      const len = Math.hypot(b.x - a.x, b.y - a.y);
+      const N = Math.max(8, Math.ceil(len / this.SUB_PX));
+      this.octagram.segments[k] = {
+        x1: a.x,
+        y1: a.y,
+        x2: b.x,
+        y2: b.y,
+        length: len,
+        N,
+        heats: new Float32Array(N),
+      };
     }
   }
 
@@ -219,49 +233,57 @@ export class MatrixBackdropComponent implements AfterViewInit, OnDestroy {
     const dy = s.y2 - s.y1;
     const len2 = dx * dx + dy * dy;
     if (len2 < 0.0001) {
-      return { dist: Math.hypot(px - s.x1, py - s.y1), cx: s.x1, cy: s.y1 };
+      return { dist: Math.hypot(px - s.x1, py - s.y1), t: 0 };
     }
     const t = Math.max(0, Math.min(1, ((px - s.x1) * dx + (py - s.y1) * dy) / len2));
     const cx = s.x1 + t * dx;
     const cy = s.y1 + t * dy;
-    return { dist: Math.hypot(px - cx, py - cy), cx, cy };
+    return { dist: Math.hypot(px - cx, py - cy), t };
+  }
+
+  private bumpHeat(seg: { N: number; heats: Float32Array }, t: number, intensity: number): void {
+    let center = Math.floor(t * seg.N);
+    if (center < 0) center = 0;
+    if (center >= seg.N) center = seg.N - 1;
+    for (let k = center - this.HEAT_SPREAD; k <= center + this.HEAT_SPREAD; k++) {
+      if (k < 0 || k >= seg.N) continue;
+      const d = Math.abs(k - center);
+      const falloff = 1 - d / (this.HEAT_SPREAD + 1);
+      const add = intensity * falloff;
+      if (add <= 0) continue;
+      const next = seg.heats[k] + add;
+      seg.heats[k] = next > 1 ? 1 : next;
+    }
   }
 
   private drawOctagram(layerAlpha: number): void {
+    this.ctx.lineCap = 'round';
     this.ctx.lineWidth = 1;
+    this.ctx.strokeStyle = `rgba(${this.palette.line},1)`;
+
     for (const seg of this.octagram.segments) {
-      const alpha = (0.06 + seg.heat * 0.55) * layerAlpha;
-      if (alpha < 0.002) continue;
-      this.ctx.globalAlpha = alpha;
-      this.ctx.strokeStyle = `rgba(${this.palette.line},1)`;
+      this.ctx.globalAlpha = 0.025 * layerAlpha;
       this.ctx.beginPath();
       this.ctx.moveTo(seg.x1, seg.y1);
       this.ctx.lineTo(seg.x2, seg.y2);
       this.ctx.stroke();
-      seg.heat *= this.HEAT_DECAY;
-    }
-  }
 
-  private drawGlows(delta: number, layerAlpha: number): void {
-    for (let i = this.glows.length - 1; i >= 0; i--) {
-      const g = this.glows[i];
-      g.life += delta;
-      const p = g.life / g.maxLife;
-      if (p >= 1) {
-        this.glows.splice(i, 1);
-        continue;
+      const invN = 1 / seg.N;
+      const dx = seg.x2 - seg.x1;
+      const dy = seg.y2 - seg.y1;
+      for (let i = 0; i < seg.N; i++) {
+        const h = seg.heats[i];
+        if (h > 0.004) {
+          const a = i * invN;
+          const b = (i + 1) * invN;
+          this.ctx.globalAlpha = h * 0.7 * layerAlpha;
+          this.ctx.beginPath();
+          this.ctx.moveTo(seg.x1 + dx * a, seg.y1 + dy * a);
+          this.ctx.lineTo(seg.x1 + dx * b, seg.y1 + dy * b);
+          this.ctx.stroke();
+        }
+        seg.heats[i] *= this.HEAT_DECAY;
       }
-      const alpha = Math.sin(p * Math.PI) * g.maxAlpha * layerAlpha;
-      if (alpha < 0.003) continue;
-      const radius = 36 + g.life * 0.02;
-      const grad = this.ctx.createRadialGradient(g.x, g.y, 0, g.x, g.y, radius);
-      grad.addColorStop(0, `rgba(${this.palette.hot},${alpha})`);
-      grad.addColorStop(1, `rgba(${this.palette.hot},0)`);
-      this.ctx.globalAlpha = 1;
-      this.ctx.fillStyle = grad;
-      this.ctx.beginPath();
-      this.ctx.arc(g.x, g.y, radius, 0, Math.PI * 2);
-      this.ctx.fill();
     }
   }
 
@@ -269,8 +291,6 @@ export class MatrixBackdropComponent implements AfterViewInit, OnDestroy {
     if (!this.running) return;
     const now = performance.now();
     const elapsed = now - this.t0;
-    const delta = this.lastFrame ? now - this.lastFrame : 16;
-    this.lastFrame = now;
 
     if (elapsed > this.totalMs) {
       this.ctx.clearRect(0, 0, this.dimensions.w, this.dimensions.h);
@@ -315,7 +335,6 @@ export class MatrixBackdropComponent implements AfterViewInit, OnDestroy {
     this.ctx.fillStyle = `rgba(${this.palette.bg},${trailAlpha})`;
     this.ctx.fillRect(0, 0, this.dimensions.w, this.dimensions.h);
 
-    this.drawGlows(delta, layerAlpha);
     this.drawOctagram(layerAlpha);
 
     this.ctx.globalAlpha = dropAlpha;
@@ -333,16 +352,7 @@ export class MatrixBackdropComponent implements AfterViewInit, OnDestroy {
       for (const seg of this.octagram.segments) {
         const r = this.distToSeg(gx, gy, seg);
         if (r.dist < this.HIT_RADIUS) {
-          seg.heat = Math.min(1, seg.heat + 0.3);
-          if (Math.random() < 0.3) {
-            this.glows.push({
-              x: r.cx + (Math.random() - 0.5) * 10,
-              y: r.cy + (Math.random() - 0.5) * 10,
-              life: 0,
-              maxLife: 1200 + Math.random() * 600,
-              maxAlpha: 0.18 + Math.random() * 0.08,
-            });
-          }
+          this.bumpHeat(seg, r.t, 0.7);
         }
       }
 
